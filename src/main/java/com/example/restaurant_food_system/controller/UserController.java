@@ -25,7 +25,6 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/profile")
-    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile() {
         CustomUserDetail customUserDetail = (CustomUserDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String userId = customUserDetail.getUserId();

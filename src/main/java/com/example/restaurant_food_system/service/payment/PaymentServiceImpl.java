@@ -58,15 +58,25 @@ public class PaymentServiceImpl implements PaymentService {
             }
 
             // 5.2 Tạo payment
-            Payment payment = Payment.builder()
-                    .amountPaid(order.getTotalPrice())
-                    .amountReceived(paymentRequest.getAmountReceived())
-                    .changeAmount(paymentRequest.getAmountReceived() - order.getTotalPrice())
-                    .paymentMethod(PaymentMethod.CASH)
-                    .paymentStatus(PaymentStatus.SUCCESS)
-                    .order(order)
-                    .build();
-            paymentRepository.save(payment);
+            if (order.getPayment() == null) {
+                Payment payment = Payment.builder()
+                        .amountPaid(order.getTotalPrice())
+                        .amountReceived(paymentRequest.getAmountReceived())
+                        .changeAmount(paymentRequest.getAmountReceived() - order.getTotalPrice())
+                        .paymentMethod(PaymentMethod.CASH)
+                        .paymentStatus(PaymentStatus.SUCCESS)
+                        .order(order)
+                        .build();
+                paymentRepository.save(payment);
+            }
+            else {
+                Payment paymentExist = order.getPayment();
+                paymentExist.setAmountReceived(paymentRequest.getAmountReceived());
+                paymentExist.setChangeAmount(paymentRequest.getAmountReceived() - order.getTotalPrice());
+                paymentExist.setPaymentMethod(PaymentMethod.CASH);
+                paymentExist.setPaymentStatus(PaymentStatus.SUCCESS);
+                paymentRepository.save(paymentExist);
+            }
 
             // 5.3 Cập nhật order
             order.setStatus(true);
@@ -86,16 +96,29 @@ public class PaymentServiceImpl implements PaymentService {
 
         // 6. Thanh toán chuyển khoản
         else {
-            // 6.1 Tạo payment pending
-            Payment payment = Payment.builder()
-                    .amountPaid(order.getTotalPrice())
-                    .amountReceived(paymentRequest.getAmountReceived())
-                    .changeAmount(paymentRequest.getAmountReceived() - order.getTotalPrice())
-                    .paymentMethod(PaymentMethod.TRANSFER)
-                    .paymentStatus(PaymentStatus.PENDING)
-                    .order(order)
-                    .build();
-            paymentRepository.save(payment);
+            // Nếu đơn gọi món này chưa có payment -> tạo payment
+            if (order.getPayment() == null) {
+                // 6.1 Tạo payment pending
+                Payment payment = Payment.builder()
+                        .amountPaid(order.getTotalPrice())
+                        .amountReceived(paymentRequest.getAmountReceived())
+                        .changeAmount(0.0)
+                        .paymentMethod(PaymentMethod.TRANSFER)
+                        .paymentStatus(PaymentStatus.PENDING)
+                        .order(order)
+                        .build();
+                paymentRepository.save(payment);
+            }
         }
+    }
+
+    @Override
+    public String getPaymentDetailsByOrder(String orderId) {
+        // 1. Kiểm tra đơn gọi món
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Đơn gọi món không tồn tại"));
+
+        // 2. Lấy trạng thái thanh toán hiện tại
+        return order.getPayment().getPaymentStatus();
     }
 }

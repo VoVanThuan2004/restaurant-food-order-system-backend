@@ -25,4 +25,17 @@ public class PaymentController {
                         .message("Thanh toán đơn gọi món thành công")
                 .build());
     }
+
+    // Lấy thông tin chi tiết payment
+    @GetMapping("/{orderId}/detail")
+    public ResponseEntity<ApiResponse<?>> getPaymentDetailsByOrder(@PathVariable("orderId") String orderId) {
+        String paymentStatus = paymentService.getPaymentDetailsByOrder(orderId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Lấy thông tin chi tiết thanh toán đơn gọi món")
+                        .data(paymentStatus)
+                .build());
+    }
 }

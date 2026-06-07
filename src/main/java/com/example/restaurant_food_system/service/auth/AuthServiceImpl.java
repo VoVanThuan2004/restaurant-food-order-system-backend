@@ -94,8 +94,6 @@ public class AuthServiceImpl implements AuthService {
                 )
                 .build(), TokenConstant.REFRESH_TOKEN_EXPIRATION);
 
-        System.out.println("refresh token: " + refreshToken);
-
         // 5. Lưu refresh token xuống DB
         refreshTokenRepository.save(RefreshToken.builder()
                         .refreshToken(DigestUtils.sha256Hex(refreshToken))
