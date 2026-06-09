@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.util.List;
 
 @Getter
@@ -18,5 +19,8 @@ public class OrderResponse {
     private Double totalPrice;
     private Double amountReceived;
     private Double changeAmount;
+    private Boolean status;
+    private String paymentMethod;
+    private Instant paidAt;
     List<OrderItemResponse> orderItems;
 }

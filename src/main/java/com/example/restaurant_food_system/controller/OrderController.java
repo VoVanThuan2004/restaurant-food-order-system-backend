@@ -10,7 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
@@ -116,6 +119,27 @@ public class OrderController {
                         .status("success")
                         .code(HttpStatus.OK.value())
                         .message("Lấy danh sách đơn gọi món của nhân viên")
+                        .data(orderResponses)
+                .build());
+    }
+
+    // ======= Lấy danh sách orders (Admin) =======
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getOrdersByAdmin(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) Boolean status
+            ) {
+        Page<OrderResponse> orderResponses = orderService.getOrdersByAdmin(page, size, startDate, endDate, userId, status);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<Page<OrderResponse>>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Lấy danh sách đơn gọi món thành công")
                         .data(orderResponses)
                 .build());
     }

@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
@@ -209,8 +211,46 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Đơn gọi món không tồn tại"));
 
         // 2. Lấy tổng số món ăn có trong đơn gọi món
-
         Integer totalItems = orderItemRepository.countAllByOrderId(orderId);
         return totalItems;
+    }
+
+    @Override
+    public Page<OrderResponse> getOrdersByAdmin(
+            int page, int size, LocalDate startDate, LocalDate endDate, String userId, Boolean status
+    ) {
+        // 1. Tạo đối tượng phân trang
+        Pageable pageable = PageRequest.of(page, size);
+
+        Instant startInstant = null;
+        Instant endInstant = null;
+        if (startDate != null && endDate != null) {
+            ZoneId zoneId = ZoneId.systemDefault();
+            startInstant = startDate
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+
+            endInstant = endDate
+                    .plusDays(1)
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+        }
+
+
+        // 2. Query trả về data orders
+        Page<Order> orders = orderRepository.findOrdersForAdmin(startInstant, endInstant, userId, status, pageable);
+
+        // 3. Mapping data trả về
+        return orders.map(order -> OrderResponse.builder()
+                .orderId(order.getOrderId())
+                .diningTableName(order.getDiningTable().getName())
+                .staffName(order.getUser().getFullName())
+                .totalPrice(order.getTotalPrice())
+                .amountReceived(order.getAmountReceived())
+                .changeAmount(order.getChangeAmount())
+                .status(order.getStatus())
+                .paymentMethod(order.getPayment().getPaymentMethod())
+                .paidAt(order.getPayment().getPaidAt())
+                .build());
     }
 }

@@ -6,6 +6,8 @@ import com.example.restaurant_food_system.dto.response.OrderResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 
+import java.time.LocalDate;
+
 public interface OrderService {
     String createOrder(@Valid OrderRequest orderRequest);
 
@@ -20,4 +22,6 @@ public interface OrderService {
     Page<OrderPaymentResponse> getOrdersByStaff(String staffId, int page, int size);
 
     Integer getOrderTotalItems(String orderId);
+
+    Page<OrderResponse> getOrdersByAdmin(int page, int size, LocalDate startDate, LocalDate endDate, String userId, Boolean status);
 }
