@@ -14,6 +14,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/dishes")
@@ -105,6 +107,21 @@ public class DishController {
                 .status("success")
                 .code(HttpStatus.OK.value())
                 .message("Xóa món ăn thành công")
+                .build());
+    }
+    
+    // Lấy danh sách món ăn gợi ý
+    @GetMapping("/recommend")
+    public ResponseEntity<ApiResponse<List<DishResponse>>> getRecommendDishes(
+            @RequestParam List<String> dishIds
+    ) {
+        List<DishResponse> dishResponses = dishService.getRecommendDishes(dishIds);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<List<DishResponse>>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Lấy danh sách các món ăn gợi ý")
+                        .data(dishResponses)
                 .build());
     }
 }

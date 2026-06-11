@@ -13,6 +13,7 @@ import java.util.List;
 @Builder
 public class OrderItemResponse {
     private String orderItemId;
+    private String dishId;
     private String dishName;
     private Double basePrice;
     private Integer quantity;

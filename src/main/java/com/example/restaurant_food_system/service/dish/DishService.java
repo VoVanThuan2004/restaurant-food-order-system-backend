@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 public interface DishService {
     void createNewDish(DishRequest dishRequest, MultipartFile file);
 
@@ -19,4 +21,6 @@ public interface DishService {
     void updateDishStatus(String dishId);
 
     void deleteDish(String dishId);
+
+    List<DishResponse> getRecommendDishes(List<String> dishIds);
 }

@@ -13,6 +13,7 @@ public class OrderItemMapper {
     public OrderItemResponse mapToResponse(OrderItem orderItem) {
         return OrderItemResponse.builder()
                 .orderItemId(orderItem.getOrderItemId())
+                .dishId(orderItem.getDish().getDishId())
                 .dishName(orderItem.getDish().getName())
                 .dishImage(orderItem.getDishImage())
                 .basePrice(orderItem.getBasePrice())

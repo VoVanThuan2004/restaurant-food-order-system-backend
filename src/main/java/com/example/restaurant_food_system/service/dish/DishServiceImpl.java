@@ -7,21 +7,18 @@ import com.example.restaurant_food_system.dto.response.DishDetailResponse;
 import com.example.restaurant_food_system.dto.response.DishResponse;
 import com.example.restaurant_food_system.dto.response.DishStatusResponse;
 import com.example.restaurant_food_system.dto.response.UploadResult;
-import com.example.restaurant_food_system.entity.Category;
-import com.example.restaurant_food_system.entity.Dish;
-import com.example.restaurant_food_system.entity.DishVariantGroup;
-import com.example.restaurant_food_system.entity.DishVariantOption;
+import com.example.restaurant_food_system.entity.*;
 import com.example.restaurant_food_system.exception.BadRequestException;
 import com.example.restaurant_food_system.exception.ResourceNotFoundException;
 import com.example.restaurant_food_system.mapper.DishMapper;
-import com.example.restaurant_food_system.repository.CategoryRepository;
-import com.example.restaurant_food_system.repository.DishRepository;
-import com.example.restaurant_food_system.repository.DishVariantGroupRepository;
-import com.example.restaurant_food_system.repository.DishVariantOptionRepository;
+import com.example.restaurant_food_system.repository.*;
 import com.example.restaurant_food_system.service.CloudinaryService;
 import com.example.restaurant_food_system.service.SocketService;
+import com.example.restaurant_food_system.utils.RuleSide;
 import com.example.restaurant_food_system.utils.ValidateFile;
 import lombok.RequiredArgsConstructor;
+import org.apache.tomcat.util.digester.Rule;
+import org.hibernate.engine.profile.Association;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +42,7 @@ public class DishServiceImpl implements DishService {
     private final DishVariantOptionRepository dishVariantOptionRepository;
     private final DishMapper dishMapper;
     private final SocketService socketService;
+    private final AssociationRuleRepository associationRuleRepository;
 
     @Override
     @Transactional
@@ -365,5 +363,49 @@ public class DishServiceImpl implements DishService {
         // 2. Xóa mềm món ăn
         dish.setDeleted(true);
         dishRepository.save(dish);
+    }
+
+    @Override
+    public List<DishResponse> getRecommendDishes(List<String> dishIds) {
+        // Lấy tất cả các rules
+        List<AssociationRule> rules = associationRuleRepository.findAll();
+
+        // Đưa dishIds thành các phần tử độc lập
+        Set<String> cartSet = new HashSet<>(dishIds);
+
+        List<DishResponse> result = new ArrayList<>();
+
+        for (AssociationRule rule: rules) {
+            Set<String> antecedents =
+                    rule.getItems()
+                            .stream()
+                            .filter(item -> item.getSide() == RuleSide.ANTECEDENT)
+                            .map(item -> item.getDish().getDishId())
+                            .collect(Collectors.toSet());
+
+            boolean matched = cartSet.containsAll(antecedents);
+            if (!matched) {
+                continue;
+            }
+
+            rule.getItems()
+                    .stream()
+                    .filter(item -> item.getSide() == RuleSide.CONSEQUENT)
+                    .filter(item -> !cartSet.contains(item.getDish().getDishId()))
+                    .forEach(item -> {
+                        Dish dish = item.getDish();
+
+                        result.add(DishResponse.builder()
+                                        .dishId(dish.getDishId())
+                                        .name(dish.getName())
+                                        .basePrice(dish.getBasePrice())
+                                        .status(dish.isStatus())
+                                        .image(dish.getImage())
+                                .build());
+                    });
+        }
+
+
+        return result;
     }
 }
