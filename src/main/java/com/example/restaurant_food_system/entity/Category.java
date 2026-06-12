@@ -26,4 +26,7 @@ public class Category {
 
     @UpdateTimestamp
     private Instant updatedAt;
+
+    @Builder.Default
+    private boolean deleted = false;
 }

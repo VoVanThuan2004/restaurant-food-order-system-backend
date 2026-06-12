@@ -12,4 +12,6 @@ public interface CategoryService {
     void updateCategory(String categoryId, @Valid CategoryRequest request);
 
     List<CategoryResponse> getCategories();
+
+    void deleteCategory(String categoryId);
 }

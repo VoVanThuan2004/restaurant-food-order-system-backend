@@ -48,9 +48,21 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<CategoryResponse> getCategories() {
         // Query data
-        List<Category> categories = categoryRepository.findAll(Sort.by("createdAt").descending());
+        List<Category> categories = categoryRepository.findAllCategories();
 
         // Mapping data trả về
         return categoryMapper.mapToResponseList(categories);
+    }
+
+    @Override
+    public void deleteCategory(String categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Không tìm thấy danh mục"
+                        ));
+
+        category.setDeleted(true);
+        categoryRepository.save(category);
     }
 }

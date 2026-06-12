@@ -125,16 +125,16 @@ public interface OrderRepository extends JpaRepository<Order, String> {
 
 
     @Query(value = """
-    SELECT
-        YEARWEEK(o.created_at, 1) as label,
-        SUM(o.total_price) as revenue
-    FROM orders o
-    WHERE o.status = true
-      AND o.created_at >= :startDate
-      AND o.created_at < :endDate
-    GROUP BY YEARWEEK(o.created_at, 1)
-    ORDER BY YEARWEEK(o.created_at, 1)
-""", nativeQuery = true)
+        SELECT
+            YEARWEEK(o.created_at, 1) as label,
+            SUM(o.total_price) as revenue
+        FROM orders o
+        WHERE o.status = true
+          AND o.created_at >= :startDate
+          AND o.created_at < :endDate
+        GROUP BY YEARWEEK(o.created_at, 1)
+        ORDER BY YEARWEEK(o.created_at, 1)
+    """, nativeQuery = true)
     List<Object[]> statisticRevenueByWeek(
             @Param("startDate") Instant startDate,
             @Param("endDate") Instant endDate

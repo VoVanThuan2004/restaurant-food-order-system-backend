@@ -70,4 +70,17 @@ public class CategoryController {
                         .build()
         );
     }
+
+    // Xóa mềm danh mục
+    @DeleteMapping("/{categoryId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<?>> deleteCategory(@PathVariable String categoryId) {
+        categoryService.deleteCategory(categoryId);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Xóa danh mục thành công")
+                .build());
+    }
 }
