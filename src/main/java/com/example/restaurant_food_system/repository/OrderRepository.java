@@ -1,6 +1,7 @@
 package com.example.restaurant_food_system.repository;
 
 import com.example.restaurant_food_system.dto.response.RevenueStatisticResponse;
+import com.example.restaurant_food_system.dto.response.TopDishResponse;
 import com.example.restaurant_food_system.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -138,5 +139,21 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     List<Object[]> statisticRevenueByWeek(
             @Param("startDate") Instant startDate,
             @Param("endDate") Instant endDate
+    );
+
+    @Query("""
+        select d.name, sum(oi.quantity) as quantity
+        from Order o
+        join OrderItem oi on oi.order.orderId = o.orderId
+        join Dish d on d.dishId = oi.dish.dishId
+        where o.status = true and o.createdAt between :startDate and :endDate
+        group by d.dishId, d.name
+        order by quantity desc
+    """)
+    List<Object[]> statisticTopDishes(
+            @Param("limit") Integer limit,
+            @Param("startDate")Instant startDate,
+            @Param("endDate") Instant endDate,
+            Pageable pageable
     );
 }

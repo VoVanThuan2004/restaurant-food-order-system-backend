@@ -2,9 +2,12 @@ package com.example.restaurant_food_system.service.dashboard;
 
 import com.example.restaurant_food_system.dto.response.RevenueStatisticResponse;
 import com.example.restaurant_food_system.dto.response.TodayStatisticDTO;
+import com.example.restaurant_food_system.dto.response.TopDishResponse;
 import com.example.restaurant_food_system.exception.BadRequestException;
 import com.example.restaurant_food_system.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -104,5 +107,48 @@ public class DashboardServiceImpl implements DashboardService {
             default:
                  throw new BadRequestException("Loại thống kê không hợp lệ");
         }
+    }
+
+    @Override
+    public List<TopDishResponse> getTopDishes(Integer limit, LocalDate startDate, LocalDate endDate) {
+        Instant startInstant = null;
+        Instant endInstant = null;
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        if (startDate != null && endDate != null) {
+            startInstant = startDate
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+
+            endInstant = endDate
+                    .plusDays(1)
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+
+        } else {
+            LocalDate today = LocalDate.now();
+
+            startInstant = today
+                    .minusDays(7)
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+
+            endInstant = today
+                    .plusDays(1)
+                    .atStartOfDay(zoneId)
+                    .toInstant();
+        }
+
+        Pageable pageable = PageRequest.of(0, limit);
+
+        // Query data trả về
+        List<Object[]> topDishes = orderRepository.statisticTopDishes(limit, startInstant, endInstant, pageable);
+
+        return topDishes.stream()
+                .map(row -> TopDishResponse.builder()
+                        .dishName(row[0].toString())
+                        .totalQuantity(((Number) row[1]).longValue())
+                        .build())
+                .toList();
     }
 }

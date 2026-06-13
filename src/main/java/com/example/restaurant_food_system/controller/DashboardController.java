@@ -3,6 +3,8 @@ package com.example.restaurant_food_system.controller;
 import com.example.restaurant_food_system.dto.response.ApiResponse;
 import com.example.restaurant_food_system.dto.response.RevenueStatisticResponse;
 import com.example.restaurant_food_system.dto.response.TodayStatisticDTO;
+import com.example.restaurant_food_system.dto.response.TopDishResponse;
+import com.example.restaurant_food_system.entity.Dish;
 import com.example.restaurant_food_system.service.dashboard.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -50,6 +52,24 @@ public class DashboardController {
                         .code(HttpStatus.OK.value())
                         .message("Thống kê doanh thu theo thời gian")
                         .data(revenueStatisticResponses)
+                .build());
+    }
+
+    // Thống kê top các loại món ăn bán chạy theo thời gian
+    @GetMapping("/top-dishes")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<TopDishResponse>>> getTopDishes(
+            @RequestParam(defaultValue = "5") Integer limit,
+            @RequestParam(required = false) LocalDate startDate,
+            @RequestParam(required = false) LocalDate endDate
+    ) {
+        List<TopDishResponse> topDishResponses = dashboardService.getTopDishes(limit, startDate, endDate);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.<List<TopDishResponse>>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Lấy top các loại món ăn bán chạy")
+                        .data(topDishResponses)
                 .build());
     }
 }
