@@ -1,6 +1,7 @@
 package com.example.restaurant_food_system.security;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -26,6 +27,9 @@ import java.util.List;
 public class WebSecurityConfig {
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
+    @Value("${fe_url}")
+    private String FE_URL;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -66,7 +70,7 @@ public class WebSecurityConfig {
     // Cấu hình CORS
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Origin của client
+        configuration.setAllowedOrigins(List.of(FE_URL)); // Origin của client
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH"));
         configuration.setAllowedHeaders(List.of(
                 "Authorization",
