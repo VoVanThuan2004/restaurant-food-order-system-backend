@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUser(String userId, UserRequest userRequest, MultipartFile file) {
+    public UserProfileResponse updateUser(String userId, UserRequest userRequest, MultipartFile file) {
         // 1. Kiểm tra người dùng
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
@@ -102,7 +102,17 @@ public class UserServiceImpl implements UserService {
         user.setGender(userRequest.getGender());
         user.setPhoneNumber(userRequest.getPhoneNumber());
         user.setDateOfBirth(userRequest.getDateOfBirth());
-        userRepository.save(user);
+        User userUpdated = userRepository.save(user);
+
+        return UserProfileResponse.builder()
+                .userId(userUpdated.getUserId())
+                .fullName(userUpdated.getFullName())
+                .roles(userUpdated.getRoles().stream()
+                        .map(Role::getRoleName)
+                        .toList()
+                )
+                .avatarUrl(userUpdated.getAvatarUrl())
+                .build();
     }
 
     @Override

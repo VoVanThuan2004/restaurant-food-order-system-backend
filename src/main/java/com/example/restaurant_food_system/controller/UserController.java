@@ -43,19 +43,19 @@ public class UserController {
             value = "/{userId}",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
-    @PreAuthorize("hasAuthority('USER_EDIT')")
-    public ResponseEntity<ApiResponse<?>> updateUser(
+    public ResponseEntity<ApiResponse<UserProfileResponse>> updateUser(
             @PathVariable String userId,
             @Valid @RequestPart("data") UserRequest userRequest,
             @RequestPart(value = "file", required = false) MultipartFile file
     ) {
-        userService.updateUser(userId, userRequest, file);
+        UserProfileResponse userProfileResponse = userService.updateUser(userId, userRequest, file);
 
         return ResponseEntity.ok(
-                ApiResponse.builder()
+                ApiResponse.<UserProfileResponse>builder()
                         .status("success")
                         .code(HttpStatus.OK.value())
                         .message("Cập nhật thông tin thành công")
+                        .data(userProfileResponse)
                         .build()
         );
     }

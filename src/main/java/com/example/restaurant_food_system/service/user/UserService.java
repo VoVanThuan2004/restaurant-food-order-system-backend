@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 public interface UserService {
     UserProfileResponse getProfile(String userId);
 
-    void updateUser(String userId, UserRequest userRequest, MultipartFile file);
+    UserProfileResponse updateUser(String userId, UserRequest userRequest, MultipartFile file);
 
     Page<UserResponse> getAllUsers(int page, int size, String search);
 
