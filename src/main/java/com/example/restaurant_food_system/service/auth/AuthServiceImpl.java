@@ -57,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
         // 1. Kiểm người dùng có tồn tại
         Optional<User> user = userRepository.findByEmail(loginRequest.getEmail());
         if (user.isEmpty()) {
-            throw new ResourceNotFoundException("Email không hợp lệ");
+            throw new ResourceNotFoundException("Email hoặc mật khẩu không chính xác");
         }
 
         // Kiểm tra tài khoản có bị khóa hay không
@@ -67,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 2. Kiểm tra password
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.get().getPassword())) {
-            throw new BadRequestException("Mật khẩu không hợp lệ");
+            throw new BadRequestException("Email hoặc mật khẩu không chính xác");
         }
 
         // 3. Lấy danh sách vai trò của người dùng
@@ -79,19 +79,13 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtTokenUtil.generateToken(TokenPayload.builder()
                 .userId(user.get().getUserId())
                 .fullName(loginRequest.getEmail())
-                .roles(user.get().getRoles().stream()
-                        .map(Role::getRoleName)
-                        .toList()
-                )
+                .roles(roles)
                 .build(), TokenConstant.ACCESS_TOKEN_EXPIRATION);
 
         String refreshToken = jwtTokenUtil.generateToken(TokenPayload.builder()
                 .userId(user.get().getUserId())
                 .fullName(loginRequest.getEmail())
-                .roles(user.get().getRoles().stream()
-                        .map(Role::getRoleName)
-                        .toList()
-                )
+                .roles(roles)
                 .build(), TokenConstant.REFRESH_TOKEN_EXPIRATION);
 
         // 5. Lưu refresh token xuống DB
