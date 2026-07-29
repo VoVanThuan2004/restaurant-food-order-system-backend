@@ -15,7 +15,10 @@ public interface DiningTableRepository extends JpaRepository<DiningTable, String
     @Query("""
         select t
         from DiningTable t
-        where (:search is null or t.name ilike concat('%', :search, '%'))
+        where (
+                :search is null
+                or t.name ilike concat('%', :search, '%')
+        )
         and (:status is null or t.status = :status)
         and t.deleted = false
     """)

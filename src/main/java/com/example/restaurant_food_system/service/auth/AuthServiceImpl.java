@@ -49,6 +49,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${fe_url}")
     private String feUrl;
 
+    @Value("${app.cookie.secure}")
+    private Boolean cookieSecure;
+
     @Override
     @Transactional
     public LoginResponse login(LoginRequest loginRequest,
@@ -131,8 +134,8 @@ public class AuthServiceImpl implements AuthService {
         // 4. Xóa refresh token ra khỏi cookie response
         ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
-                .secure(false)
-                .path("/")
+                .secure(cookieSecure)
+                .path("/api/v1/auth/")
                 .maxAge(0)  // set maxAge=0 để xóa cookie
                 .sameSite("Lax")
                 .build();
@@ -222,9 +225,9 @@ public class AuthServiceImpl implements AuthService {
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(cookieSecure)
                 .sameSite("Lax")
-                .path("/")
+                .path("/api/v1/auth/")
                 .maxAge(TokenConstant.REFRESH_TOKEN_EXPIRATION)
                 .build();
 
