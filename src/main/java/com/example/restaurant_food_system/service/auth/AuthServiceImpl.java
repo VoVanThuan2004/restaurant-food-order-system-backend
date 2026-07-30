@@ -137,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
                 .secure(cookieSecure)
                 .path("/api/v1/auth/")
                 .maxAge(0)  // set maxAge=0 để xóa cookie
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
         response.setHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
@@ -226,7 +226,7 @@ public class AuthServiceImpl implements AuthService {
         ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
                 .httpOnly(true)
                 .secure(cookieSecure)
-                .sameSite("Lax")
+                .sameSite("None")
                 .path("/api/v1/auth/")
                 .maxAge(TokenConstant.REFRESH_TOKEN_EXPIRATION)
                 .build();
