@@ -238,7 +238,12 @@ public class OrderServiceImpl implements OrderService {
 
 
         // 2. Query trả về data orders
-        Page<Order> orders = orderRepository.findOrdersForAdmin(startInstant, endInstant, userId, status, pageable);
+        Page<Order> orders;
+        if (startInstant != null && endInstant != null) {
+            orders = orderRepository.findOrdersForAdminWithDateFilter(startInstant, endInstant, userId, status, pageable);
+        } else {
+            orders = orderRepository.findOrdersForAdminNoDateFilter(userId, status, pageable);
+        }
 
         // 3. Mapping data trả về
         return orders.map(order -> OrderResponse.builder()

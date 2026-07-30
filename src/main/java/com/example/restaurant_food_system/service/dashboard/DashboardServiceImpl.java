@@ -22,13 +22,16 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public TodayStatisticDTO getTodayStatistic() {
-        Instant now = Instant.now();
+        ZoneId zoneId = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now();
+        Instant startOfDay = today.atStartOfDay(zoneId).toInstant();
+        Instant endOfDay = today.plusDays(1).atStartOfDay(zoneId).toInstant();
 
         // 1. Lấy tổng số đơn hàng hôm nay
-        Long totalOrders = orderRepository.countTotalOrdersToday(now);
+        Long totalOrders = orderRepository.countTotalOrdersToday(startOfDay, endOfDay);
 
         // 2. Lấy tổng doanh thu hôm nay
-        Double totalRevenue = orderRepository.sumTotalRevenueToday(now);
+        Double totalRevenue = orderRepository.sumTotalRevenueToday(startOfDay, endOfDay);
 
         return TodayStatisticDTO.builder()
                 .totalOrders(totalOrders)
@@ -142,7 +145,7 @@ public class DashboardServiceImpl implements DashboardService {
         Pageable pageable = PageRequest.of(0, limit);
 
         // Query data trả về
-        List<Object[]> topDishes = orderRepository.statisticTopDishes(limit, startInstant, endInstant, pageable);
+        List<Object[]> topDishes = orderRepository.statisticTopDishes(startInstant, endInstant, pageable);
 
         return topDishes.stream()
                 .map(row -> TopDishResponse.builder()

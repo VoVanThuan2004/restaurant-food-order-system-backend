@@ -45,10 +45,22 @@ public interface OrderRepository extends JpaRepository<Order, String> {
         FROM Order o
         JOIN Payment p on p.order.orderId = o.orderId
         WHERE (:userId is null or o.user.userId = :userId)
-        AND ((:startDate is null and :endDate is null) or p.paidAt BETWEEN :startDate AND :endDate)
         AND (:status is null or o.status = :status)
     """)
-    Page<Order> findOrdersForAdmin(
+    Page<Order> findOrdersForAdminNoDateFilter(
+            @Param("userId") String userId,
+            @Param("status") Boolean status,
+            Pageable pageable);
+
+    @Query("""
+        SELECT o
+        FROM Order o
+        JOIN Payment p on p.order.orderId = o.orderId
+        WHERE (:userId is null or o.user.userId = :userId)
+        AND p.paidAt BETWEEN :startDate AND :endDate
+        AND (:status is null or o.status = :status)
+    """)
+    Page<Order> findOrdersForAdminWithDateFilter(
             @Param("startDate") Instant startDate,
             @Param("endDate") Instant endDate,
             @Param("userId") String userId,
@@ -60,26 +72,30 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     @Query("""
         select count(o)
         from Order o
-        where o.status = true and o.createdAt >= :now and o.createdAt < :now
+        where o.status = true and o.createdAt >= :startDate and o.createdAt < :endDate
     """)
-    Long countTotalOrdersToday(@Param("now") Instant now);
+    Long countTotalOrdersToday(
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate);
 
     @Query("""
         select sum(o.totalPrice)
         from Order o
-        where o.status = true and o.createdAt >= :now and o.createdAt < :now
+        where o.status = true and o.createdAt >= :startDate and o.createdAt < :endDate
     """)
-    Double sumTotalRevenueToday(@Param("now") Instant now);
+    Double sumTotalRevenueToday(
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate);
 
     @Query(value = """
         SELECT
-            DATE_FORMAT(o.created_at, '%Y-%m') as label,
+            TO_CHAR(o.created_at, 'YYYY-MM') as label,
             SUM(o.total_price) as revenue
         FROM orders o
         WHERE o.status = true
               AND o.created_at >= :startDate
               AND o.created_at < :endDate
-        GROUP BY DATE_FORMAT(o.created_at, '%Y-%m')
+        GROUP BY TO_CHAR(o.created_at, 'YYYY-MM')
         ORDER BY label
     """, nativeQuery = true)
     List<RevenueStatisticResponse> statisticRevenueByMonth(
@@ -89,13 +105,13 @@ public interface OrderRepository extends JpaRepository<Order, String> {
 
     @Query(value = """
         SELECT
-            YEAR(o.created_at) as label,
+            EXTRACT(YEAR FROM o.created_at) as label,
             SUM(o.total_price) as revenue
         FROM orders o
         WHERE o.status = true
               AND o.created_at >= :startDate
               AND o.created_at < :endDate
-        GROUP BY YEAR(o.created_at)
+        GROUP BY EXTRACT(YEAR FROM o.created_at)
         ORDER BY label
     """, nativeQuery = true)
     List<Object[]> statisticRevenueByYear(
@@ -105,19 +121,19 @@ public interface OrderRepository extends JpaRepository<Order, String> {
 
     @Query(value = """
         SELECT
-            YEAR(o.created_at) as yearValue,
-            QUARTER(o.created_at) as quarterValue,
+            EXTRACT(YEAR FROM o.created_at) as yearValue,
+            EXTRACT(QUARTER FROM o.created_at) as quarterValue,
             SUM(o.total_price) as revenue
         FROM orders o
         WHERE o.status = true
           AND o.created_at >= :startDate
           AND o.created_at < :endDate
         GROUP BY
-            YEAR(o.created_at),
-            QUARTER(o.created_at)
+            EXTRACT(YEAR FROM o.created_at),
+            EXTRACT(QUARTER FROM o.created_at)
         ORDER BY
-            YEAR(o.created_at),
-            QUARTER(o.created_at)
+            EXTRACT(YEAR FROM o.created_at),
+            EXTRACT(QUARTER FROM o.created_at)
     """, nativeQuery = true)
     List<Object[]> statisticRevenueByQuarter(
             @Param("startDate") Instant startDate,
@@ -127,14 +143,14 @@ public interface OrderRepository extends JpaRepository<Order, String> {
 
     @Query(value = """
         SELECT
-            YEARWEEK(o.created_at, 1) as label,
+            TO_CHAR(o.created_at, 'IYYY-IW') as label,
             SUM(o.total_price) as revenue
         FROM orders o
         WHERE o.status = true
           AND o.created_at >= :startDate
           AND o.created_at < :endDate
-        GROUP BY YEARWEEK(o.created_at, 1)
-        ORDER BY YEARWEEK(o.created_at, 1)
+        GROUP BY TO_CHAR(o.created_at, 'IYYY-IW')
+        ORDER BY TO_CHAR(o.created_at, 'IYYY-IW')
     """, nativeQuery = true)
     List<Object[]> statisticRevenueByWeek(
             @Param("startDate") Instant startDate,
@@ -151,7 +167,6 @@ public interface OrderRepository extends JpaRepository<Order, String> {
         order by quantity desc
     """)
     List<Object[]> statisticTopDishes(
-            @Param("limit") Integer limit,
             @Param("startDate")Instant startDate,
             @Param("endDate") Instant endDate,
             Pageable pageable
