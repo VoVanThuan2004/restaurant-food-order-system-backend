@@ -2,8 +2,10 @@ package com.example.restaurant_food_system.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 public class DiningTableRequest {
     @NotBlank(message = "Tên bàn không được để trống")
     @Size(max = 50, message = "Tên bàn tối đa 50 ký tự")
