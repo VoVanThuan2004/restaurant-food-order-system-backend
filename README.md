@@ -11,7 +11,7 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 | Spring Security + JWT | 0.11.5 (jjwt) |
 | Spring Data JPA + Hibernate | |
 | Spring WebSocket (STOMP) | |
-| MySQL | 8.0 (Docker) |
+| PostgreSQL | 8.0 (Docker) |
 | Cloudinary | Image upload |
 | OpenAPI / Swagger UI | springdoc 3.0.3 |
 | Lombok | 1.18.38 |
@@ -39,7 +39,7 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 └────────────────────────────────────────────────────┼─────────┘
                                                      │
                           ┌──────────────────────────┼──────────┐
-                          │          MySQL 8.0       │          │
+                          │          PostgreSQL 8.0       │          │
                           │  ┌───────────────────────▼────┐     │
                           │  │       JPA Entities        │     │
                           │  │  (ddl-auto=update)         │     │
@@ -249,7 +249,7 @@ cd restaurant-food-system
 
 # 2. Copy file .env (đã có sẵn, kiểm tra lại thông số)
 
-# 3. Khởi động MySQL
+# 3. Khởi động PostgreSQL
 docker compose up -d
 
 # 4. Build & run
@@ -262,17 +262,16 @@ java -jar target/restaurant-food-system-0.0.1-SNAPSHOT.jar
 
 ### Docker Compose
 ```yaml
-# MySQL 8.0
+# PostgreSQL 8.0
 services:
-  mysql:
-    image: mysql:8.0
+  PostgreSQL:
+    image: postgres:16
     ports:
       - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 ```
 
 ### Biến môi trường (.env)
