@@ -43,7 +43,8 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/refresh-token").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/dishes").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/dishes/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories").permitAll()
                         .requestMatchers("/ws").permitAll()
                         // Swagger UI paths - QUAN TRỌNG: thêm đầy đủ các pattern này
                         .requestMatchers(

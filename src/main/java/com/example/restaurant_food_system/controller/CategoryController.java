@@ -56,7 +56,6 @@ public class CategoryController {
     }
 
     @GetMapping("")
-    @PreAuthorize("hasAuthority('CATEGORY_VIEW')")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories() {
 
         List<CategoryResponse> response = categoryService.getCategories();
