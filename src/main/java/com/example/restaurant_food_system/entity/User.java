@@ -36,10 +36,10 @@ public class User {
     @Builder.Default
     private boolean isActive = true;
 
-
-
-    @CreationTimestamp@Builder.Default
+    @Builder.Default
     private boolean emailVerified = false;
+
+    @CreationTimestamp
     @Column(updatable = false)
     private Instant createdAt;
 
