@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -133,25 +134,31 @@ public class UserServiceImpl implements UserService {
         // 1. Tạo random mật khẩu
         String password = generateRandomPassword();
 
-        // 2. Kiểm tra vai trò có hợp lệ
+        // 2. Kiểm tra email đã tồn tại
+        if (userRepository.existsByEmailIgnoreCase(userCreateRequest.getEmail().trim())) {
+            throw new BadRequestException("Email đã được sử dụng");
+        }
+
+        // 3. Kiểm tra vai trò có hợp lệ
         List<Role> roles = roleRepository.findByRoleIdIn(userCreateRequest.getRoleIds());
         if (roles.isEmpty() || roles.size() != userCreateRequest.getRoleIds().size()) {
             throw new BadRequestException("Vai trò không hợp lệ");
         }
 
-        // 3. Tạo người dùng
+        // 4. Tạo người dùng
         User user = User.builder()
-                .email(userCreateRequest.getEmail())
+                .email(userCreateRequest.getEmail().trim().toLowerCase())
                 .fullName(userCreateRequest.getFullName())
                 .phoneNumber(userCreateRequest.getPhoneNumber())
                 .gender(userCreateRequest.getGender())
                 .dateOfBirth(userCreateRequest.getDateOfBirth())
                 .roles(new HashSet<>(roles))
                 .password(passwordEncoder.encode(password))
+                .emailVerified(true)
                 .build();
         userRepository.save(user);
 
-        // 4. Gửi email người dùng
+        // 5. Gửi email người dùng
         String subject = "Thông tin tài khoản đăng nhập hệ thống";
         String content = emailContent.buildAccountEmailContent(user.getFullName(), user.getEmail(), password);
         emailService.sendEmail(user.getEmail(), subject, content);
@@ -195,6 +202,16 @@ public class UserServiceImpl implements UserService {
         user.setDateOfBirth(userUpdateRequest.getDateOfBirth());
         user.setRoles(new HashSet<>(roles));
         userRepository.save(user);
+    }
+
+    @Override
+    public Optional<User> findUserById(String userId) {
+        Optional<User> user = userRepository.findById(userId);
+        if (user.isEmpty()) {
+            throw new ResourceNotFoundException("Người dùng không tồn tại");
+        }
+
+        return user;
     }
 
     private String generateRandomPassword() {

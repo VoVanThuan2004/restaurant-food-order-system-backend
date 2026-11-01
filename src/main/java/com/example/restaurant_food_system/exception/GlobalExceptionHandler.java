@@ -27,6 +27,15 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiResponse<?>> handleExternalServiceException(ExternalServiceException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.builder()
+                .status("error")
+                .code(HttpStatus.SERVICE_UNAVAILABLE.value())
+                .message(e.getMessage())
+                .build());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationException(
             MethodArgumentNotValidException ex

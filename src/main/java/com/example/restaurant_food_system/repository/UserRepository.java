@@ -36,6 +36,11 @@ public interface UserRepository extends JpaRepository<User, String> {
         join u.roles r
         where (u.email ilike concat('%', :search, '%') or u.fullName ilike concat('%', :search, '%'))
         and r.roleName <> 'ADMIN'
+        and r.roleName <> 'CUSTOMER'
     """)
     Page<User> findAllUsers(@Param("search") String search, Pageable pageable);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    Optional<User> findByEmailIgnoreCase(String email);
 }

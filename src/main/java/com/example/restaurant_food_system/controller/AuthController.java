@@ -1,11 +1,15 @@
 package com.example.restaurant_food_system.controller;
 
 import com.example.restaurant_food_system.dto.request.ChangePasswordRequest;
+import com.example.restaurant_food_system.dto.request.CustomerRegisterRequest;
 import com.example.restaurant_food_system.dto.request.ForgotPasswordDTO;
 import com.example.restaurant_food_system.dto.request.LoginRequest;
+import com.example.restaurant_food_system.dto.request.ResendVerificationRequest;
 import com.example.restaurant_food_system.dto.request.ResetPasswordDTO;
+import com.example.restaurant_food_system.dto.request.VerifyEmailRequest;
 import com.example.restaurant_food_system.dto.response.ApiResponse;
 import com.example.restaurant_food_system.dto.response.LoginResponse;
+import com.example.restaurant_food_system.dto.response.RegisterResponse;
 import com.example.restaurant_food_system.security.CustomUserDetail;
 import com.example.restaurant_food_system.service.auth.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,6 +40,46 @@ public class AuthController {
                         .code(HttpStatus.OK.value())
                         .message("Đăng nhập thành công")
                         .data(loginResponse)
+                .build());
+    }
+
+    @PostMapping("register")
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(
+            @Valid @RequestBody CustomerRegisterRequest customerRegisterRequest,
+            HttpServletRequest httpServletRequest
+    ) {
+        RegisterResponse registerResponse = authService.register(customerRegisterRequest, httpServletRequest);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.<RegisterResponse>builder()
+                .status("success")
+                .code(HttpStatus.CREATED.value())
+                .message("Đăng ký tài khoản thành công. Vui lòng kiểm tra email để xác thực tài khoản")
+                .data(registerResponse)
+                .build());
+    }
+
+    @PostMapping("verify-email")
+    public ResponseEntity<ApiResponse<?>> verifyEmail(@Valid @RequestBody VerifyEmailRequest verifyEmailRequest) {
+        authService.verifyEmail(verifyEmailRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.builder()
+                .status("success")
+                .code(HttpStatus.OK.value())
+                .message("Xác thực email thành công")
+                .build());
+    }
+
+    @PostMapping("resend-verification")
+    public ResponseEntity<ApiResponse<?>> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest resendVerificationRequest,
+            HttpServletRequest httpServletRequest
+    ) {
+        authService.resendVerification(resendVerificationRequest, httpServletRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.builder()
+                .status("success")
+                .code(HttpStatus.OK.value())
+                .message("Nếu email tồn tại và chưa xác thực, hệ thống đã gửi lại email xác thực")
                 .build());
     }
 

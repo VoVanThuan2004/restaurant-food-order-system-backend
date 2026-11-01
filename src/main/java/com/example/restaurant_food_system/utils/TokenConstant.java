@@ -9,4 +9,8 @@ public class TokenConstant {
 
     // Reset password
     public static final long RESET_TOKEN_PASSWORD_EXPIRATION = 5 * 60;
+
+    // Verify email
+    public static final long VERIFY_EMAIL_EXPIRATION = 24 * 60 * 60;  // 24 giờ
+    public static final long VERIFY_EMAIL_RESEND_COOLDOWN = 60;       // 60 giây
 }

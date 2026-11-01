@@ -4,9 +4,12 @@ import com.example.restaurant_food_system.dto.request.UserCreateRequest;
 import com.example.restaurant_food_system.dto.request.UserRequest;
 import com.example.restaurant_food_system.dto.response.UserProfileResponse;
 import com.example.restaurant_food_system.dto.response.UserResponse;
+import com.example.restaurant_food_system.entity.User;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Optional;
 
 public interface UserService {
     UserProfileResponse getProfile(String userId);
@@ -20,4 +23,6 @@ public interface UserService {
     boolean activateUser(String userId);
 
     void updateUserForAdmin(String userId, @Valid UserCreateRequest userUpdateRequest);
+
+    Optional<User> findUserById(String userId);
 }

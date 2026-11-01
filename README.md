@@ -1,6 +1,6 @@
 # Restaurant Food System
 
-Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, hỗ trợ 3 vai trò: **Admin**, **Waiter**, **Kitchen Chef**.
+Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, hỗ trợ 4 vai trò: **Admin**, **Waiter**, **Kitchen Chef**, **Customer**.
 
 ## 🏗️ Công nghệ sử dụng
 
@@ -52,8 +52,8 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 
 | Entity | Bảng | Mô tả |
 |--------|------|-------|
-| `User` | `user` | Người dùng (Admin, Waiter, Chef) |
-| `Role` | `role` | Vai trò: ADMIN, STAFF, CHEF |
+| `User` | `users` | Người dùng (Admin, Staff, Chef, Customer) |
+| `Role` | `role` | Vai trò: ADMIN, STAFF, CHEF, CUSTOMER |
 | `Permission` | `permission` | Quyền chi tiết (ORDER_VIEW, DISH_EDIT,...) |
 | `Category` | `category` | Danh mục món ăn |
 | `Dish` | `dish` | Món ăn |
@@ -67,6 +67,7 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 | `Payment` | `payment` | Thanh toán |
 | `RefreshToken` | `refresh_token` | Token refresh |
 | `PasswordResetToken` | `password_reset_tokens` | Token đặt lại mật khẩu |
+| `EmailVerificationToken` | `email_verification_token` | Token xác thực email |
 | `AssociationRule` | `association_rule` | Luật kết hợp (recommend) |
 | `AssociationRuleItem` | `association_rule_item` | Item trong luật |
 
@@ -76,13 +77,14 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 
 ## 🔐 Phân quyền (Role-Based Access Control)
 
-### 3 vai trò:
+### 4 vai trò:
 
 | Vai trò | Mô tả | Quyền |
 |---------|-------|-------|
-| **ADMIN** | Quản trị viên hệ thống | Tất cả 25 quyền |
+| **ADMIN** | Quản trị viên hệ thống | Tất cả quyền |
 | **STAFF** | Nhân viên phục vụ (Waiter) | ORDER_VIEW, ORDER_CREATE, ORDER_UPDATE, ORDER_CANCEL, TABLE_VIEW, DISH_VIEW, CATEGORY_VIEW |
 | **CHEF** | Đầu bếp (Kitchen Chef) | ORDER_VIEW, ORDER_UPDATE, DISH_VIEW, DISH_EDIT, CATEGORY_VIEW |
+| **CUSTOMER** | Khách hàng | DISH_VIEW, CATEGORY_VIEW, ORDER_VIEW, ORDER_CREATE, ORDER_UPDATE, ORDER_CANCEL, ADDRESS_VIEW, ADDRESS_CREATE, ADDRESS_UPDATE, ADDRESS_DELETE |
 
 ### Danh sách Permission:
 
@@ -93,7 +95,8 @@ CATEGORY_VIEW, CATEGORY_CREATE, CATEGORY_UPDATE, CATEGORY_DELETE,
 TABLE_VIEW,   TABLE_CREATE,   TABLE_EDIT,     TABLE_DELETE,
 REPORT_VIEW,  REPORT_EXPORT,
 USER_VIEW,    USER_CREATE,    USER_EDIT,      USER_DELETE,
-ROLE_VIEW,    ROLE_CREATE,    ROLE_EDIT,      ROLE_DELETE
+ROLE_VIEW,    ROLE_CREATE,    ROLE_EDIT,      ROLE_DELETE,
+ADDRESS_VIEW, ADDRESS_CREATE, ADDRESS_UPDATE, ADDRESS_DELETE
 ```
 
 ## 🔑 Authentication & Security
@@ -101,11 +104,17 @@ ROLE_VIEW,    ROLE_CREATE,    ROLE_EDIT,      ROLE_DELETE
 - **Xác thực:** JWT (Access Token + Refresh Token)
 - **Access Token:** 30 phút, gửi qua header `Authorization: Bearer <token>`
 - **Refresh Token:** 7 ngày, lưu trong httpOnly Cookie (`refreshToken`), hash SHA-256 trong DB
-- **Luồng:**
+- **Đăng ký khách hàng:**
+  1. `POST /api/v1/auth/register` → tạo tài khoản `CUSTOMER` với `emailVerified=false`
+  2. Hệ thống gửi email chứa link `${FE_URL}/verify-email?token=<token>`
+  3. `POST /api/v1/auth/verify-email` → xác thực email (token hết hạn sau 24 giờ)
+  4. `POST /api/v1/auth/resend-verification` → gửi lại email xác thực (giới hạn 60 giây/lần)
+- **Luồng đăng nhập:**
   1. `POST /api/v1/auth/login` → nhận access token + refresh token cookie
   2. Gửi kèm access token trong mọi request
   3. Khi hết hạn → `POST /api/v1/auth/refresh-token` (tự động qua cookie)
   4. `POST /api/v1/auth/logout` → xóa cookie + DB record
+- **Điều kiện đăng nhập:** tài khoản không bị khóa và đã xác thực email
 - **Password:** BCrypt, hỗ trợ forgot/reset password qua email
 - **Tài khoản Admin mặc định:** `admin@gmail.com` / `admin12345`
 
@@ -146,6 +155,9 @@ NEW → PENDING → ACCEPTED → PREPARING → READY → SERVED
 ### Auth (`/api/v1/auth`)
 | Method | Path | Quyền | Mô tả |
 |--------|------|-------|-------|
+| POST | `/register` | Public | Đăng ký tài khoản khách hàng |
+| POST | `/verify-email` | Public | Xác thực email bằng token |
+| POST | `/resend-verification` | Public | Gửi lại email xác thực |
 | POST | `/login` | Public | Đăng nhập |
 | POST | `/logout` | Public | Đăng xuất |
 | POST | `/change-password` | Authenticated | Đổi mật khẩu |
@@ -211,13 +223,22 @@ NEW → PENDING → ACCEPTED → PREPARING → READY → SERVED
 | POST | `/` | Public | Thanh toán đơn hàng |
 | GET | `/{orderId}/detail` | Public | Chi tiết thanh toán |
 
+### Addresses (`/api/v1/addresses`)
+| Method | Path | Quyền | Mô tả |
+|--------|------|-------|-------|
+| GET | `/` | Authenticated | Danh sách địa chỉ của người dùng |
+| POST | `/` | Authenticated | Thêm địa chỉ (chỉ TP.HCM) |
+| PUT | `/{addressId}` | Authenticated | Cập nhật địa chỉ |
+| PUT | `/{addressId}/default` | Authenticated | Đặt làm địa chỉ mặc định |
+| DELETE | `/{addressId}` | Authenticated | Xóa địa chỉ |
+
 ### Users (`/api/v1/users`)
 | Method | Path | Quyền | Mô tả |
 |--------|------|-------|-------|
 | GET | `/profile` | Authenticated | Thông tin cá nhân |
 | PUT | `/{userId}` | Authenticated | Cập nhật profile |
 | PUT | `/{userId}/admin` | USER_EDIT | Admin cập nhật user |
-| GET | `/` | ADMIN | Danh sách user (phân trang) |
+| GET | `/` | ADMIN | Danh sách user (phân trang, không gồm ADMIN và CUSTOMER) |
 | POST | `/` | ADMIN | Tạo user mới |
 | PUT | `/{userId}/active` | ADMIN | Khóa/mở tài khoản |
 
