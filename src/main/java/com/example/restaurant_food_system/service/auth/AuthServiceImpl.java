@@ -65,6 +65,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${app.cookie.secure}")
     private Boolean cookieSecure;
 
+    @Value("${app.cookie.same-site}")
+    private String cookieSameSite;
+
     @Override
     @Transactional
     public LoginResponse login(LoginRequest loginRequest,
@@ -150,13 +153,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 4. Xóa refresh token ra khỏi cookie response
-        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .path("/api/v1/auth/")
-                .maxAge(0)  // set maxAge=0 để xóa cookie
-                .sameSite("None")
-                .build();
+        ResponseCookie deleteCookie = buildRefreshTokenCookie("", 0L);
         response.setHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 
         // 2. Xóa mã refresh token
@@ -378,15 +375,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void addRefreshTokenCookie(HttpServletResponse response, String refreshToken) {
-        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
-                .httpOnly(true)
-                .secure(cookieSecure)
-                .sameSite("None")
-                .path("/api/v1/auth/")
-                .maxAge(TokenConstant.REFRESH_TOKEN_EXPIRATION)
-                .build();
+        ResponseCookie cookie = buildRefreshTokenCookie(
+                refreshToken,
+                TokenConstant.REFRESH_TOKEN_EXPIRATION
+        );
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    private ResponseCookie buildRefreshTokenCookie(String value, long maxAge) {
+        return ResponseCookie.from("refreshToken", value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite(cookieSameSite)
+                .path("/api/v1/auth/")
+                .maxAge(maxAge)
+                .build();
     }
 
     private String generateTokenWithUUID() {
