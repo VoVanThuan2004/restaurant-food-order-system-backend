@@ -1,16 +1,27 @@
 package com.example.restaurant_food_system.repository;
 
 import com.example.restaurant_food_system.entity.DiningTable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface DiningTableRepository extends JpaRepository<DiningTable, String> {
     boolean existsDiningTableByName(String name);
+
+    boolean existsByQrCode(String qrCode);
+
+    Optional<DiningTable> findByQrCode(String qrCode);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from DiningTable t where t.diningTableId = :diningTableId")
+    Optional<DiningTable> findByIdForUpdate(@Param("diningTableId") String diningTableId);
 
     @Query("""
         select t

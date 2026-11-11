@@ -27,6 +27,15 @@ public class GlobalExceptionHandler {
                 .build());
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiResponse<?>> handleConflictException(ConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.builder()
+                .status("error")
+                .code(HttpStatus.CONFLICT.value())
+                .message(e.getMessage())
+                .build());
+    }
+
     @ExceptionHandler(ExternalServiceException.class)
     public ResponseEntity<ApiResponse<?>> handleExternalServiceException(ExternalServiceException e) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiResponse.builder()

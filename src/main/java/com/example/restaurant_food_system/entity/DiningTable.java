@@ -25,6 +25,12 @@ public class DiningTable {
     @Column(nullable = false)
     private Long position;
 
+    @Column(name = "qr_code", unique = true, length = 64)
+    private String qrCode;
+
+    @Column(name = "qr_generated_at")
+    private Instant qrGeneratedAt;
+
     @Builder.Default
     private Boolean status = Boolean.TRUE;
 
