@@ -84,7 +84,7 @@ Hệ thống quản lý nhà hàng toàn diện với kiến trúc REST API, h�
 | **ADMIN** | Quản trị viên hệ thống | Tất cả quyền |
 | **STAFF** | Nhân viên phục vụ (Waiter) | ORDER_VIEW, ORDER_CREATE, ORDER_UPDATE, ORDER_CANCEL, TABLE_VIEW, DISH_VIEW, CATEGORY_VIEW |
 | **CHEF** | Đầu bếp (Kitchen Chef) | ORDER_VIEW, ORDER_UPDATE, DISH_VIEW, DISH_EDIT, CATEGORY_VIEW |
-| **CUSTOMER** | Khách hàng | DISH_VIEW, CATEGORY_VIEW, ORDER_VIEW, ORDER_CREATE, ORDER_UPDATE, ORDER_CANCEL, ADDRESS_VIEW, ADDRESS_CREATE, ADDRESS_UPDATE, ADDRESS_DELETE |
+| **CUSTOMER** | Khách hàng | DISH_VIEW, CATEGORY_VIEW, ORDER_VIEW, ORDER_CREATE, ORDER_UPDATE, ORDER_CANCEL |
 
 ### Danh sách Permission:
 
@@ -95,8 +95,7 @@ CATEGORY_VIEW, CATEGORY_CREATE, CATEGORY_UPDATE, CATEGORY_DELETE,
 TABLE_VIEW,   TABLE_CREATE,   TABLE_EDIT,     TABLE_DELETE,
 REPORT_VIEW,  REPORT_EXPORT,
 USER_VIEW,    USER_CREATE,    USER_EDIT,      USER_DELETE,
-ROLE_VIEW,    ROLE_CREATE,    ROLE_EDIT,      ROLE_DELETE,
-ADDRESS_VIEW, ADDRESS_CREATE, ADDRESS_UPDATE, ADDRESS_DELETE
+ROLE_VIEW,    ROLE_CREATE,    ROLE_EDIT,      ROLE_DELETE
 ```
 
 ## 🔑 Authentication & Security
@@ -194,6 +193,13 @@ NEW → PENDING → ACCEPTED → PREPARING → READY → SERVED
 | PATCH | `/{diningTableId}/position` | Public | Đổi vị trí |
 | PATCH | `/{diningTableId}/disable` | Public | Đổi trạng thái (trống/có khách) |
 | DELETE | `/{diningTableId}` | ADMIN | Xóa mềm |
+| POST | `/{diningTableId}/qr` | ADMIN | Tạo QR nếu chưa có |
+| POST | `/{diningTableId}/qr/regenerate` | ADMIN | Tạo lại QR, vô hiệu QR cũ |
+| GET | `/{diningTableId}/qr` | ADMIN | Lấy metadata QR |
+| GET | `/{diningTableId}/qr/image` | ADMIN | Lấy ảnh QR PNG |
+
+QR trỏ tới `{fe_url}/order?table={qrCode}`. Ảnh QR có thể tải xuống bằng `?download=true`.
+Regenerate mặc định bị chặn nếu bàn đang có session `OPEN`; dùng `?force=true` để bỏ qua.
 
 ### Orders (`/api/v1/orders`)
 | Method | Path | Quyền | Mô tả |
@@ -222,15 +228,6 @@ NEW → PENDING → ACCEPTED → PREPARING → READY → SERVED
 |--------|------|-------|-------|
 | POST | `/` | Public | Thanh toán đơn hàng |
 | GET | `/{orderId}/detail` | Public | Chi tiết thanh toán |
-
-### Addresses (`/api/v1/addresses`)
-| Method | Path | Quyền | Mô tả |
-|--------|------|-------|-------|
-| GET | `/` | Authenticated | Danh sách địa chỉ của người dùng |
-| POST | `/` | Authenticated | Thêm địa chỉ (chỉ TP.HCM) |
-| PUT | `/{addressId}` | Authenticated | Cập nhật địa chỉ |
-| PUT | `/{addressId}/default` | Authenticated | Đặt làm địa chỉ mặc định |
-| DELETE | `/{addressId}` | Authenticated | Xóa địa chỉ |
 
 ### Users (`/api/v1/users`)
 | Method | Path | Quyền | Mô tả |

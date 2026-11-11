@@ -4,11 +4,15 @@ import com.example.restaurant_food_system.dto.request.DiningTableRequest;
 import com.example.restaurant_food_system.dto.request.UpdateTablePositionRequest;
 import com.example.restaurant_food_system.dto.response.ApiResponse;
 import com.example.restaurant_food_system.dto.response.DiningTableResponse;
+import com.example.restaurant_food_system.dto.response.QrCodeResponse;
 import com.example.restaurant_food_system.service.diningTable.DiningTableService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -136,5 +140,78 @@ public class DiningTableController {
                         .data(diningTableResponse)
                         .build()
         );
+    }
+
+    @PostMapping("/{diningTableId}/qr")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QrCodeResponse>> ensureQrCode(
+            @PathVariable String diningTableId
+    ) {
+        QrCodeResponse qrCodeResponse = diningTableService.ensureQrCode(diningTableId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<QrCodeResponse>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Tạo QR bàn ăn thành công")
+                        .data(qrCodeResponse)
+                        .build()
+        );
+    }
+
+    @PostMapping("/{diningTableId}/qr/regenerate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QrCodeResponse>> regenerateQrCode(
+            @PathVariable String diningTableId,
+            @RequestParam(defaultValue = "false") boolean force
+    ) {
+        QrCodeResponse qrCodeResponse = diningTableService.regenerateQrCode(diningTableId, force);
+
+        return ResponseEntity.ok(
+                ApiResponse.<QrCodeResponse>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Tạo lại QR bàn ăn thành công")
+                        .data(qrCodeResponse)
+                        .build()
+        );
+    }
+
+    @GetMapping("/{diningTableId}/qr")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QrCodeResponse>> getQrCode(
+            @PathVariable String diningTableId
+    ) {
+        QrCodeResponse qrCodeResponse = diningTableService.getQrCode(diningTableId);
+
+        return ResponseEntity.ok(
+                ApiResponse.<QrCodeResponse>builder()
+                        .status("success")
+                        .code(HttpStatus.OK.value())
+                        .message("Lấy QR bàn ăn thành công")
+                        .data(qrCodeResponse)
+                        .build()
+        );
+    }
+
+    @GetMapping("/{diningTableId}/qr/image")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> getQrImage(
+            @PathVariable String diningTableId,
+            @RequestParam(defaultValue = "false") boolean download
+    ) {
+        byte[] image = diningTableService.generateQrImage(diningTableId);
+        String filename = "qr-" + diningTableId + ".png";
+        ContentDisposition contentDisposition = (download
+                ? ContentDisposition.attachment()
+                : ContentDisposition.inline())
+                .filename(filename)
+                .build();
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
+                .body(image);
     }
 }

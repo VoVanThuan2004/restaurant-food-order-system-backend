@@ -3,11 +3,16 @@ package com.example.restaurant_food_system.service.diningTable;
 import com.example.restaurant_food_system.dto.request.DiningTableRequest;
 import com.example.restaurant_food_system.dto.request.UpdateTablePositionRequest;
 import com.example.restaurant_food_system.dto.response.DiningTableResponse;
+import com.example.restaurant_food_system.dto.response.QrCodeResponse;
 import com.example.restaurant_food_system.entity.DiningTable;
 import com.example.restaurant_food_system.exception.BadRequestException;
+import com.example.restaurant_food_system.exception.ConflictException;
 import com.example.restaurant_food_system.exception.ResourceNotFoundException;
 import com.example.restaurant_food_system.mapper.DiningTableMapper;
 import com.example.restaurant_food_system.repository.DiningTableRepository;
+import com.example.restaurant_food_system.repository.DiningTableSessionRepository;
+import com.example.restaurant_food_system.service.qr.QrCodeService;
+import com.example.restaurant_food_system.utils.DiningTableSessionStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +27,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +45,12 @@ class DiningTableServiceTest {
 
     @Mock
     private DiningTableMapper diningTableMapper;
+
+    @Mock
+    private QrCodeService qrCodeService;
+
+    @Mock
+    private DiningTableSessionRepository diningTableSessionRepository;
 
     @InjectMocks
     private DiningTableServiceImpl diningTableService;
@@ -64,10 +77,14 @@ class DiningTableServiceTest {
         when(diningTableRepository.existsDiningTableByName("Bàn 1")).thenReturn(false);
         when(diningTableRepository.findMaxPosition()).thenReturn(null);
         when(diningTableMapper.mapToEntity(request)).thenReturn(diningTable);
+        when(qrCodeService.generateCode()).thenReturn("TBL_TEST_CODE");
+        when(diningTableRepository.existsByQrCode("TBL_TEST_CODE")).thenReturn(false);
 
         diningTableService.createDiningTable(request);
 
         assertEquals(1000L, diningTable.getPosition());
+        assertEquals("TBL_TEST_CODE", diningTable.getQrCode());
+        assertNotNull(diningTable.getQrGeneratedAt());
         verify(diningTableRepository).save(diningTable);
     }
 
@@ -79,10 +96,13 @@ class DiningTableServiceTest {
         when(diningTableRepository.existsDiningTableByName("Bàn 4")).thenReturn(false);
         when(diningTableRepository.findMaxPosition()).thenReturn(3000L);
         when(diningTableMapper.mapToEntity(request)).thenReturn(diningTable);
+        when(qrCodeService.generateCode()).thenReturn("TBL_TEST_CODE");
+        when(diningTableRepository.existsByQrCode("TBL_TEST_CODE")).thenReturn(false);
 
         diningTableService.createDiningTable(request);
 
         assertEquals(4000L, diningTable.getPosition());
+        assertEquals("TBL_TEST_CODE", diningTable.getQrCode());
         verify(diningTableRepository).save(diningTable);
     }
 
@@ -352,5 +372,142 @@ class DiningTableServiceTest {
 
         verify(diningTableRepository, times(2)).findAllByOrderByPositionAsc();
         verify(diningTableRepository).save(diningTable);
+    }
+
+    @Test
+    void ensureQrCode_WhenTableHasNoQr_ShouldGenerateAndSave() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1").build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+        when(qrCodeService.generateCode()).thenReturn("TBL_NEW_CODE");
+        when(diningTableRepository.existsByQrCode("TBL_NEW_CODE")).thenReturn(false);
+        when(qrCodeService.buildQrUrl("TBL_NEW_CODE"))
+                .thenReturn("http://localhost:5173/order?table=TBL_NEW_CODE");
+
+        QrCodeResponse response = diningTableService.ensureQrCode("t1");
+
+        assertEquals("TBL_NEW_CODE", response.getQrCode());
+        assertEquals("http://localhost:5173/order?table=TBL_NEW_CODE", response.getQrUrl());
+        assertNotNull(response.getQrGeneratedAt());
+        verify(diningTableRepository).save(diningTable);
+    }
+
+    @Test
+    void ensureQrCode_WhenTableAlreadyHasQr_ShouldReturnExistingCode() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1")
+                .qrCode("TBL_EXISTING").build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+        when(qrCodeService.buildQrUrl("TBL_EXISTING"))
+                .thenReturn("http://localhost:5173/order?table=TBL_EXISTING");
+
+        QrCodeResponse response = diningTableService.ensureQrCode("t1");
+
+        assertEquals("TBL_EXISTING", response.getQrCode());
+        verify(diningTableRepository, never()).save(any());
+    }
+
+    @Test
+    void ensureQrCode_WhenTableDeleted_ShouldThrowBadRequestException() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1").deleted(true).build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+
+        BadRequestException exception = assertThrows(BadRequestException.class,
+                () -> diningTableService.ensureQrCode("t1"));
+
+        assertEquals("Bàn ăn đã bị xóa", exception.getMessage());
+        verify(diningTableRepository, never()).save(any());
+    }
+
+    @Test
+    void regenerateQrCode_WhenNoOpenSession_ShouldGenerateNewCode() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1")
+                .qrCode("TBL_OLD_CODE").build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+        when(diningTableSessionRepository.existsByDiningTable_DiningTableIdAndStatus(
+                "t1", DiningTableSessionStatus.OPEN)).thenReturn(false);
+        when(qrCodeService.generateCode()).thenReturn("TBL_NEW_CODE");
+        when(diningTableRepository.existsByQrCode("TBL_NEW_CODE")).thenReturn(false);
+        when(qrCodeService.buildQrUrl("TBL_NEW_CODE"))
+                .thenReturn("http://localhost:5173/order?table=TBL_NEW_CODE");
+
+        QrCodeResponse response = diningTableService.regenerateQrCode("t1", false);
+
+        assertEquals("TBL_NEW_CODE", response.getQrCode());
+        verify(diningTableRepository).save(diningTable);
+    }
+
+    @Test
+    void regenerateQrCode_WhenOpenSessionAndNotForced_ShouldThrowConflictException() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1")
+                .qrCode("TBL_OLD_CODE").build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+        when(diningTableSessionRepository.existsByDiningTable_DiningTableIdAndStatus(
+                "t1", DiningTableSessionStatus.OPEN)).thenReturn(true);
+
+        ConflictException exception = assertThrows(ConflictException.class,
+                () -> diningTableService.regenerateQrCode("t1", false));
+
+        assertEquals("Bàn ăn đang có phiên mở, không thể tạo lại QR", exception.getMessage());
+        verify(diningTableRepository, never()).save(any());
+    }
+
+    @Test
+    void regenerateQrCode_WhenOpenSessionAndForced_ShouldGenerateNewCode() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1")
+                .qrCode("TBL_OLD_CODE").build();
+
+        when(diningTableRepository.findByIdForUpdate("t1")).thenReturn(Optional.of(diningTable));
+        when(diningTableSessionRepository.existsByDiningTable_DiningTableIdAndStatus(
+                "t1", DiningTableSessionStatus.OPEN)).thenReturn(true);
+        when(qrCodeService.generateCode()).thenReturn("TBL_FORCED_CODE");
+        when(diningTableRepository.existsByQrCode("TBL_FORCED_CODE")).thenReturn(false);
+        when(qrCodeService.buildQrUrl("TBL_FORCED_CODE"))
+                .thenReturn("http://localhost:5173/order?table=TBL_FORCED_CODE");
+
+        QrCodeResponse response = diningTableService.regenerateQrCode("t1", true);
+
+        assertEquals("TBL_FORCED_CODE", response.getQrCode());
+        verify(diningTableRepository).save(diningTable);
+    }
+
+    @Test
+    void getQrCode_WhenTableHasNoQr_ShouldThrowResourceNotFoundException() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1").build();
+
+        when(diningTableRepository.findById("t1")).thenReturn(Optional.of(diningTable));
+
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                () -> diningTableService.getQrCode("t1"));
+
+        assertEquals("Bàn ăn chưa có QR", exception.getMessage());
+    }
+
+    @Test
+    void generateQrImage_WhenQrExists_ShouldReturnRenderedPng() {
+        DiningTable diningTable = DiningTable.builder()
+                .diningTableId("t1").name("Bàn 1")
+                .qrCode("TBL_EXISTING").build();
+        byte[] expectedImage = new byte[]{1, 2, 3};
+
+        when(diningTableRepository.findById("t1")).thenReturn(Optional.of(diningTable));
+        when(qrCodeService.buildQrUrl("TBL_EXISTING"))
+                .thenReturn("http://localhost:5173/order?table=TBL_EXISTING");
+        when(qrCodeService.renderPng("http://localhost:5173/order?table=TBL_EXISTING"))
+                .thenReturn(expectedImage);
+
+        byte[] result = diningTableService.generateQrImage("t1");
+
+        assertSame(expectedImage, result);
     }
 }

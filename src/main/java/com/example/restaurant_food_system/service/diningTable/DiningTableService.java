@@ -3,6 +3,7 @@ package com.example.restaurant_food_system.service.diningTable;
 import com.example.restaurant_food_system.dto.request.DiningTableRequest;
 import com.example.restaurant_food_system.dto.request.UpdateTablePositionRequest;
 import com.example.restaurant_food_system.dto.response.DiningTableResponse;
+import com.example.restaurant_food_system.dto.response.QrCodeResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 
@@ -24,4 +25,12 @@ public interface DiningTableService {
     void reIndexAllTables();
 
     List<DiningTableResponse> updateDiningTablePosition(String diningTableId, UpdateTablePositionRequest updateTablePositionRequest);
+
+    QrCodeResponse ensureQrCode(String diningTableId);
+
+    QrCodeResponse regenerateQrCode(String diningTableId, boolean force);
+
+    QrCodeResponse getQrCode(String diningTableId);
+
+    byte[] generateQrImage(String diningTableId);
 }
